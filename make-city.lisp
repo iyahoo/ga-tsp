@@ -26,6 +26,17 @@
                                         :test #'equal))))
    (remove-duplicates (mapcar #'car edge-list))))
 
+;; error this
+
+(defun get-distance (start end edge-alist)
+  "始点終点間の距離"
+  (let ((x (car (cdr (find end (cdr (assoc start edge-alist)) :key #'car)))))
+    (if x
+        x
+        (get-distance end start edge-alist))))
+
+;; error this
+
 (defun add-distance (edge-alist)
   (mapcar
    #'(lambda (x)
@@ -34,7 +45,9 @@
          (cons node1
                (mapcar #'(lambda (edge)
                            (let ((node2 (car edge)))
-                             (list node2 (1+ (random *max-distance-num*)))))
+                             (list node2 (if (> node1 node2)
+                                             (get-distance node2 node1 edge-alist)
+                                             (1+ (random *max-distance-num*))))))
                        node1-edge))))
    edge-alist))
 
