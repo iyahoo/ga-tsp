@@ -1,5 +1,14 @@
 (load "graph-util")
 
+;; todo
+;; 遺伝子コードを決める
+;; 各個体の適応度を決める
+;; 適応度=コレまで求めた最小値/その個体の距離
+;; ペアの選択 確率=適用度/全体の選択肢体の適用度の総和
+;; 交叉 1点 同じ都市番号は入ってない、
+;; 突然変異=どれか2つを交換
+
+
 (defparameter *city-number* nil)
 (defparameter *edge-num* nil)
 (defparameter *max-distance-num* nil)
@@ -9,7 +18,8 @@
   (defparameter *city-number* 10)
   (defparameter *edge-num* 50)
   (defparameter *max-distance-num* 10)
-  (defparameter *salesman-num* 10))
+  (defparameter *salesman-num* 10)
+  (defparameter *min-distance-num* (* *max-distance-num* *max-distance-num*)))
 
 (load "make-city")
 
@@ -30,19 +40,29 @@
     genes))
 
 (defparameter *salesmans-list* (loop repeat *salesman-NUM*
-                                  collect
-                                    (make-salesman :GENES (gene-code) :fitness 100 :distance 0)))
+                                  collect (make-salesman :GENES (gene-code) :fitness 0.0 :distance 0)))
 
-;; error
 (defun set-distance (salesman edge-alist)
   (let ((genes (salesman-genes salesman))) ;; pop用
-    (setf (salesman-distance salesman) (+ (loop for i below *city-number*
-                                           sum (get-distance (pop genes) (pop genes) edge-alist))
-                                          (get-distance (pop genes) (salesman-genes salesman) edge-alist)))))
+    (setf (salesman-distance salesman) (+ (loop for i from 1 below *city-number*
+                                           sum (get-distance (pop genes) (car genes) edge-alist))
+                                          (get-distance (pop genes) (car (salesman-genes salesman)) edge-alist)))))
 
 (defun calc-distance (salesmans edge-alist)
+  "salesmanの遺伝子での距離"
   (loop for salesman in salesmans
-       collect (let (genes (salesman-genes salesman))
-                 )))
+     do (set-distance salesman edge-alist)))
+
+(defun get-minimum-distance (salesmans)
+  (reduce #'min (mapcar #'(lambda (salesman)
+                            (salesman-distance salesman))
+                        salesmans)))
+
+(defun set-fitness (salesman min-distance)
+  (setf (salesman-fitness salesman) (/ (* min-distance 1.0) (salesman-distance salesman))))
+
+(defun calc-fitness (salesmans min-distance)
+  (loop for salesman in salesmans
+       do (set-fitness salesman min-distance)))
 
 
