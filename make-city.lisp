@@ -26,13 +26,9 @@
                                         :test #'equal))))
    (remove-duplicates (mapcar #'car edge-list))))
 
-;; error this
-
 (defun get-distance (start end edge-alist)
   "始点終点間の距離"
   (car (cdr (find end (cdr (assoc start edge-alist)) :key #'car))))
-
-;; error this
 
 (defun add-distance (edge-alist)
   (mapcar
