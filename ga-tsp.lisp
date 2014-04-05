@@ -48,11 +48,6 @@
                                            sum (get-distance (pop genes) (car genes) edge-alist))
                                           (get-distance (pop genes) (car (salesman-genes salesman)) edge-alist)))))
 
-(defun calc-distance (salesmans edge-alist)
-  "salesmanの遺伝子での距離"
-  (loop for salesman in salesmans
-     do (set-distance salesman edge-alist)))
-
 (defun get-minimum-distance (salesmans)
   (reduce #'min (mapcar #'(lambda (salesman)
                             (salesman-distance salesman))
@@ -61,8 +56,13 @@
 (defun set-fitness (salesman min-distance)
   (setf (salesman-fitness salesman) (/ (* min-distance 1.0) (salesman-distance salesman))))
 
-(defun calc-fitness (salesmans min-distance)
-  (loop for salesman in salesmans
-       do (set-fitness salesman min-distance)))
+(defun update-world ()
+  (mapc #'(lambda (salesman)
+            (set-distance salesman *edge-alist*))
+        *salesman-num*)
 
-
+  (setf *min-distance-num* (get-minimum-distance *salesmans-list*))
+  
+  (mapc #'(lambda (salesman)
+            (set-fitness salesman *edge-alist*))
+        *salesmans-list*))
