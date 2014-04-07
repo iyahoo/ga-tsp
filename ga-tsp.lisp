@@ -81,4 +81,3 @@
   (map-salesmans set-distance *salesmans-list* *edge-alist*) ; macro
   (setf *min-distance-num* (min *min-distance-num* (minimum-distance *salesmans-list*)))
   (map-salesmans set-fitness *salesmans-list*  *min-distance-num*))
- 
