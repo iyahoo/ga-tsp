@@ -1,5 +1,10 @@
 ;; make city-node
 
+(defun nodes->alist (nodes)
+  (mapcar #'(lambda (x)
+              (list x))
+          nodes))
+
 (defun edge-pair (a b)
   (unless (eql a b)
     (list (cons a b) (cons b a))))
@@ -35,6 +40,7 @@
 ;; error this
 
 (defun add-distance (edge-alist)
+  "終点が始点より数字が小さい場合(ex. node1 = 3, node2 = 1)、始点終点どちらから辿っても同じになるようにする処理のため、nilにしておく"
   (mapcar
    #'(lambda (x)
        (let ((node1 (car x))
@@ -47,9 +53,6 @@
                        node1-edge))))
    edge-alist))
 
-(defun make-city-edges ()
-  (add-distance (edges-to-alist (make-edge-list))))
-
 (defun complete-city-edge (edge-alist)
   (mapcar
    #'(lambda (x)
@@ -61,21 +64,16 @@
                                  (dist (car (cdr edge))))
                              (list node2 (if dist
                                              dist
-                                             (get-distance node2 node1 edge-alist)))))
+                                             (get-distance node2 node1 edge-alist))))) ;すでに求めてある値を利用する
                        node1-edge))))
    edge-alist))
 
-(defparameter *edge-alist* (complete-city-edge (make-city-edges)))
-
-(defun nodes->alist (nodes)
-  (mapcar #'(lambda (x)
-              (list x))
-          nodes))
+(defun make-city-edges ()
+  (complete-city-edge (add-distance (edges-to-alist (make-edge-list)))))
 
 ;; draw-city
 
-(defun draw-city ()
-  "*edge-alist* -> (make-city-edges)"
+(defun draw-city (edge-alist)
   (let ((node (loop for i below *city-number* collect (1+ i))))
-    (ugraph->png "city.dat" (nodes->alist node) *edge-alist*)))
+    (ugraph->png "city.dat" (nodes->alist node) edge-alist)))
 
