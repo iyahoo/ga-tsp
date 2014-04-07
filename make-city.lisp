@@ -1,5 +1,10 @@
 ;; make city-node
 
+(defun nodes->alist (nodes)
+  (mapcar #'(lambda (x)
+              (list x))
+          nodes))
+
 (defun edge-pair (a b)
   (unless (eql a b)
     (list (cons a b) (cons b a))))
@@ -43,9 +48,6 @@
                        node1-edge))))
    edge-alist))
 
-(defun make-city-edges ()
-  (add-distance (edges-to-alist (make-edge-list))))
-
 (defun complete-city-edge (edge-alist)
   (mapcar
    #'(lambda (x)
@@ -61,12 +63,8 @@
                        node1-edge))))
    edge-alist))
 
-(defparameter *edge-alist* (complete-city-edge (make-city-edges)))
-
-(defun nodes->alist (nodes)
-  (mapcar #'(lambda (x)
-              (list x))
-          nodes))
+(defun make-city-edges ()
+  (complete-city-edge (add-distance (edges-to-alist (make-edge-list)))))
 
 ;; draw-city
 

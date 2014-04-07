@@ -56,13 +56,14 @@
 (defun set-fitness (salesman min-distance)
   (setf (salesman-fitness salesman) (/ (* min-distance 1.0) (salesman-distance salesman))))
 
-(defun update-world ()
-  (mapc #'(lambda (salesman)
-            (set-distance salesman *edge-alist*))
-        *salesman-num*)
+;; (defun update-world ()
+;;   (mapc #'(lambda (salesman)
+;;             (set-distance salesman *edge-alist*))
+;;         *salesman-num*)
 
-  (setf *min-distance-num* (get-minimum-distance *salesmans-list*))
+;;   (setf *min-distance-num* (get-minimum-distance *salesmans-list*))
   
-  (mapc #'(lambda (salesman)
-            (set-fitness salesman *edge-alist*))
-        *salesmans-list*))
+;;   (mapc #'(lambda (salesman)
+;;             (set-fitness salesman *edge-alist*))
+;;         *salesmans-list*))
+
