@@ -25,10 +25,6 @@
 
 (defstruct salesman genes fitness distance)
 
-;;(make-human :GENES (gene-code) :fitness 100 :distance 0)
-
-;; calc
-
 (defun gene-code ()
   "重複のないランダムな1-10の遺伝子(数字を街の番号とする)"
   (let ((genes (list (1+ (random *city-number*)))))
@@ -53,22 +49,22 @@
 (defun set-fitness (salesman min-distance)
   (setf (salesman-fitness salesman) (/ (* min-distance 1.0) (salesman-distance salesman))))
 
-;; todo 交叉 適応値による2つの親を選ぶ 部分写像交叉
-
 (defun sum-fitness (salesmans)
   (reduce #'+ (mapcar #'salesman-fitness salesmans)))
 
 (defun calc-probability (salesman sum-fitness)
   (/ (salesman-fitness salesman) sum-fitness))
 
+;; todo 交叉 適応値による2つの親を選ぶ 部分写像交叉
+
 (defun parents-genes (salesmans)
   "ルーレット方式でランダムに二人の親を選ぶ"
   (let ((sumfit (sum-fitness salesmans)))))
 
-(defun set-crossing (salesman salesmans)
-  (let ()))
+(defun set-crossing (salesman salesmans))
 
 ;; todo 突然変異
+(defun set-mutation (salesman))
 
 (defmacro map-salesmans (f salesmans-list target)
   (let ((salesman (gensym)))

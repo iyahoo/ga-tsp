@@ -19,7 +19,7 @@
                      (eql (car x) node))
                  edge-list))
 
-;; change city-node -> city-edge
+;; city-node -> city-edge
 
 (defun edges-to-alist (edge-list)
   (mapcar
@@ -31,13 +31,9 @@
                                         :test #'equal))))
    (remove-duplicates (mapcar #'car edge-list))))
 
-;; error this
-
 (defun get-distance (start end edge-alist)
   "始点終点間の距離"
   (car (cdr (find end (cdr (assoc start edge-alist)) :key #'car))))
-
-;; error this
 
 (defun add-distance (edge-alist)
   "終点が始点より数字が小さい場合(ex. node1 = 3, node2 = 1)、始点終点どちらから辿っても同じになるようにする処理のため、nilにしておく"
