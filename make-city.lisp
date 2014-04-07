@@ -19,7 +19,7 @@
                      (eql (car x) node))
                  edge-list))
 
-;; change city-node -> city-edge
+;; city-node -> city-edge
 
 (defun edges-to-alist (edge-list)
   (mapcar
@@ -36,6 +36,7 @@
   (car (cdr (find end (cdr (assoc start edge-alist)) :key #'car))))
 
 (defun add-distance (edge-alist)
+  "終点が始点より数字が小さい場合(ex. node1 = 3, node2 = 1)、始点終点どちらから辿っても同じになるようにする処理のため、nilにしておく"
   (mapcar
    #'(lambda (x)
        (let ((node1 (car x))
@@ -59,7 +60,7 @@
                                  (dist (car (cdr edge))))
                              (list node2 (if dist
                                              dist
-                                             (get-distance node2 node1 edge-alist)))))
+                                             (get-distance node2 node1 edge-alist))))) ;すでに求めてある値を利用する
                        node1-edge))))
    edge-alist))
 
@@ -68,8 +69,7 @@
 
 ;; draw-city
 
-(defun draw-city ()
-  "*edge-alist* -> (make-city-edges)"
+(defun draw-city (edge-alist)
   (let ((node (loop for i below *city-number* collect (1+ i))))
-    (ugraph->png "city.dat" (nodes->alist node) *edge-alist*)))
+    (ugraph->png "city.dat" (nodes->alist node) edge-alist)))
 
