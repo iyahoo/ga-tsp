@@ -12,12 +12,16 @@
 
 (load "make-city")
 
-;; todo
-;; 街を作る。alistのcarがnodeの始点、cdrの要素のcarとcdrがそれぞれ
-;; ペアの選択 確率=適用度/全体の選択肢体の適用度の総和
-;; 交叉 1点 同じ都市番号は入ってない、
+;; setと名前についた関数は構造体に変更を加える
+;; 街を作る。make-adge-alistで作成する。
+;; alistのcarがnodeの始点、cdrの要素のcarとcdrがそれぞれ終点と距離
+;; 遺伝子は数値のリストを巡回経路とする
+;; 適応値 = 自分の経路の距離 / 今までの試行で求めた最短の距離
+;; ペアの選択 確率 = 適用度/全体の適用度の総和
+;; 交叉 1点 同じ都市番号は入ってはいけないので、部分写像交叉も利用する
 ;; 突然変異=どれか2つを交換
 ;; 一回分の試行をまとめる
+;; replの作成
 
 (defstruct salesman genes fitness distance)
 
@@ -63,7 +67,7 @@
   (let ((sumfit (sum-fitness salesmans)))))
 
 (defun set-crossing (salesman salesmans)
-  "交叉、この関数を呼ぶ前に*salesmans-list*を保存しておく")
+  "交叉、この関数を呼ぶ前に前回の試行分の*salesmans-list*を保存しておく(順次setfで変更するため)")
 
 ;; todo 突然変異
 (defun set-mutation (salesman))
