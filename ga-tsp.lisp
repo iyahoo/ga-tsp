@@ -43,10 +43,11 @@
                                           (get-distance (pop genes) (car (salesman-genes salesman)) edge-alist)))))
 
 (defun minimum-distance (salesmans)
-  "全試行において求まった最小の距離"
-  (reduce #'min (mapcar #'(lambda (salesman)
-                            (salesman-distance salesman))
-                        salesmans)))
+  "全試行において求まった最小の距離とその経路"
+  (let ((mindis (reduce #'min (mapcar #'(lambda (salesman)
+                                          (salesman-distance salesman))
+                                      salesmans))))
+    (list mindis (find mindis salesmans :key #'salesman-distance)))) 
 
 (defun set-fitness (salesman min-distance)
   "適応値をもとめる"
@@ -61,27 +62,49 @@
   (/ (salesman-fitness salesman) sum-fitness))
 
 (defun set-probability (salesman salesmans)
-  (let ((sumfit (sum-fitness salesmans)))
-    (setf (salesman-probability salesman) (calc-probability salesman sumfit))))
+  "選ばれる確率をセットする。"
+  (let* ((sumfit (sum-fitness salesmans))
+         (prob (calc-probability salesman sumfit)))
+    (setf (salesman-probability salesman) prob)))
+
+;; (if (> prob 0.1)
+;;     (* prob 2)
+;;     prob)
+
 
 ;; todo 交叉 確率に応じて2つの親を選ぶ 部分写像交叉
-
-;; 合計を出す 
+;; 1.0から順に自分の確率で減らしていき、0を切った時に選ばれたとする
 (defun parents-genes (salesmans)
-  "ルーレット方式でランダムに二人の親を選ぶ")
+  "ルーレット方式でランダムに一人の親を選び遺伝子コードを返す"
+  (let ((decision (random 0.99)))
+    (loop for i do (when (< (setf decision (- decision (salesman-probability (nth i salesmans)))) 0)
+                     (return (salesman-genes (nth i salesmans)))))))
 
-(defun set-crossing (salesman salesmans)
+(defun partial-mapping-cross (gen newgen pos) ; gen = 入れようとしている要素 newgen = 入れる先、genと同じものがないか確認 pos = 前回入れようとしたものnewgenでのの位置
+  "部分写像交叉。")
+
+(defun set-crossing (salesman c-salesmans) ; コピーしたものを渡す
   "交叉の実行")
+
+;; (let* ((father (parents-genes c-salesmans))                 ; 反転した遺伝子の後ろ半分を、すでに存在しないか確かめながらconsで追加する
+;;        (mother (parents-genes c-salesmans))
+;;        (len (length father))
+;;        (fgen (copy-seq (nthcdr (/ (length mother) 2) (reverse father))))                  ; 父となる遺伝子の前半分
+;;        (mgen (copy-seq (nthcdr (/ (length mother) 2) mother)))
+;;        (newgen (mgen)))
+;;   (loop unless (fgen)
+;;      do (push newgen (let ((pos (position (car fgen) newgen)))
+;;                        (if pos
+;;                            (partial-mapping-cross (pop fgen) newgen (+ pos (/ len 2)))
+;;                            (pop fgen))))))
 
 ;; todo 突然変異
 (defun set-mutation (salesman))
 
 (defun init-status ()
-  (setf *city-number* 15)
+  (setf *city-number* 14)
   (setf *max-distance-num* 20)
-  (setf *salesman-num* 10)
-  (setf *min-distance-num* (* *max-distance-num* *max-distance-num*))
-  (setf *edge-alist* nil))
+  (setf *salesman-num* 10))
 
 (defun initialization ()
   (init-status)
@@ -101,11 +124,12 @@
 
   (map-salesmans set-distance *salesmans-list* *edge-alist*)
   
-  (setf *min-distance-num* (min *min-distance-num* (minimum-distance *salesmans-list*)))
+  (setf *min-distance-num* (if (> (car *min-distance-num*) (car (minimum-distance *salesmans-list*)))
+                               (minimum-distance *salesmans-list*)
+                               *min-distance-num*))
   
-  (map-salesmans set-fitness *salesmans-list*  *min-distance-num*)
-  
-  (let ((c-salesmans (copy-seq *salesmans-list*)))
-    (map-salesmans set-probability *salesmans-list* c-salesmans))) 
+  (map-salesmans set-fitness *salesmans-list*  (car *min-distance-num*))
+
+  (map-salesmans set-probability *salesmans-list* *salesmans-list*))
 
 (defun repl ())
