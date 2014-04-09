@@ -23,7 +23,7 @@
 ;; 一回分の試行をまとめる
 ;; replの作成
 
-(defstruct salesman genes fitness distance)
+(defstruct salesman genes fitness distance probability)
 
 (defun gene-code ()
   "重複のないランダムな1-10の遺伝子(数字を街の番号とする)"
@@ -60,28 +60,26 @@
   "ひとりのセールスマンが呼ばれる確率"
   (/ (salesman-fitness salesman) sum-fitness))
 
-;; todo 交叉 適応値による2つの親を選ぶ 部分写像交叉
+(defun set-probability (salesman salesmans)
+  (let ((sumfit (sum-fitness salesmans)))
+    (setf (salesman-probability salesman) (calc-probability salesman sumfit))))
 
+;; todo 交叉 確率に応じて2つの親を選ぶ 部分写像交叉
+
+;; 合計を出す 
 (defun parents-genes (salesmans)
-  "ルーレット方式でランダムに二人の親を選ぶ"
-  (let ((sumfit (sum-fitness salesmans)))))
+  "ルーレット方式でランダムに二人の親を選ぶ")
 
 (defun set-crossing (salesman salesmans)
-  "交叉、この関数を呼ぶ前に前回の試行分の*salesmans-list*を保存しておく(順次setfで変更するため)")
+  "交叉の実行")
 
 ;; todo 突然変異
 (defun set-mutation (salesman))
 
-(defmacro map-salesmans (f salesmans-list target)
-  (let ((salesman (gensym)))
-    `(mapc #'(lambda (,salesman)
-               (,f ,salesman ,target))
-           ,salesmans-list)))
-
 (defun init-status ()
   (setf *city-number* 15)
   (setf *max-distance-num* 20)
-  (setf *salesman-num* 15)
+  (setf *salesman-num* 10)
   (setf *min-distance-num* (* *max-distance-num* *max-distance-num*))
   (setf *edge-alist* nil))
 
@@ -89,13 +87,25 @@
   (init-status)
   (setf *edge-alist* (make-city-edges))
   (setf *salesmans-list* (loop repeat *salesman-num*
-                                  collect (make-salesman :GENES (gene-code) :fitness 0.0 :distance 0))))
+                                  collect (make-salesman :GENES (gene-code) :fitness 0.0 :distance 0 :probability 0))))
+
+(defmacro map-salesmans (f salesmans-list target)
+  (let ((salesman (gensym)))
+    `(mapc #'(lambda (,salesman)
+               (,f ,salesman ,target))
+           ,salesmans-list)))
 
 ;; todo 交叉関数と突然変異
 (defun update-world ()
   "この関数を入力した値分くりかえし、近似を求める"
-  (map-salesmans set-distance *salesmans-list* *edge-alist*) ; macro
+
+  (map-salesmans set-distance *salesmans-list* *edge-alist*)
+  
   (setf *min-distance-num* (min *min-distance-num* (minimum-distance *salesmans-list*)))
-  (map-salesmans set-fitness *salesmans-list*  *min-distance-num*)) 
+  
+  (map-salesmans set-fitness *salesmans-list*  *min-distance-num*)
+  
+  (let ((c-salesmans (copy-seq *salesmans-list*)))
+    (map-salesmans set-probability *salesmans-list* c-salesmans))) 
 
 (defun repl ())
