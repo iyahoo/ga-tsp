@@ -22,11 +22,12 @@
 ;; 突然変異=どれか2つを交換
 ;; 一回分の試行をまとめる
 ;; replの作成
+;; 実行中に現在の*minは表示できるようにする
 
 (defstruct salesman genes fitness distance probability)
 
 (defun gene-code ()
-  "重複のないランダムな1-10の遺伝子(数字を街の番号とする)"
+  "重複のないランダムな1~*city-number*の遺伝子(数字を街の番号とする)"
   (let ((genes (list (1+ (random *city-number*)))))
     (loop for i
        while (< (length genes) *city-number*)
@@ -34,6 +35,8 @@
             (unless (member num genes)
                 (push num genes))))
     genes))
+
+;; 距離関連
 
 (defun set-distance (salesman edge-alist)
   "遺伝子を巡回経路とした距離"
@@ -48,6 +51,8 @@
                                           (salesman-distance salesman))
                                       salesmans))))
     (list mindis (find mindis salesmans :key #'salesman-distance)))) 
+
+;; 適応値、確率関連
 
 (defun set-fitness (salesman min-distance)
   "適応値をもとめる"
@@ -67,25 +72,28 @@
          (prob (calc-probability salesman sumfit)))
     (setf (salesman-probability salesman) prob)))
 
-;; (if (> prob 0.1)
-;;     (* prob 2)
-;;     prob)
-
-
 ;; todo 交叉 確率に応じて2つの親を選ぶ 部分写像交叉
+
 ;; 1.0から順に自分の確率で減らしていき、0を切った時に選ばれたとする
 (defun parents-genes (salesmans)
   "ルーレット方式でランダムに一人の親を選び遺伝子コードを返す"
-  (let ((decision (random 0.99)))
+  (let ((decision (random 1.00)))
     (loop for i do (when (< (setf decision (- decision (salesman-probability (nth i salesmans)))) 0)
                      (return (salesman-genes (nth i salesmans)))))))
 
-(defun partial-mapping-cross (gen newgen pos) ; gen = 入れようとしている要素 newgen = 入れる先、genと同じものがないか確認 pos = 前回入れようとしたものnewgenでのの位置
+(defun partial-mapping-cross () 
   "部分写像交叉。")
+
+;; 案1
+;; gen = 入れようとしている要素 newgen = 入れる先、genと同じものがないか確認 pos = 前回入れようとしたものnewgenでのの位置
+;; (gen newgen pos)                       
 
 (defun set-crossing (salesman c-salesmans) ; コピーしたものを渡す
   "交叉の実行")
 
+;; 案1
+;; 途中までは良かったが部分写像が思いつかない
+;;
 ;; (let* ((father (parents-genes c-salesmans))                 ; 反転した遺伝子の後ろ半分を、すでに存在しないか確かめながらconsで追加する
 ;;        (mother (parents-genes c-salesmans))
 ;;        (len (length father))
@@ -95,11 +103,13 @@
 ;;   (loop unless (fgen)
 ;;      do (push newgen (let ((pos (position (car fgen) newgen)))
 ;;                        (if pos
-;;                            (partial-mapping-cross (pop fgen) newgen (+ pos (/ len 2)))
+;;                            (partial-mapping-cross (pop fgen) newgen (+ pos (/ len 2)))   ; ここで部分写像 
 ;;                            (pop fgen))))))
 
-;; todo 突然変異
+;; todo 突然変異 RANDOMに2要素を交換するのみ
 (defun set-mutation (salesman))
+
+;; 初期化
 
 (defun init-status ()
   (setf *city-number* 14)
@@ -112,13 +122,8 @@
   (setf *salesmans-list* (loop repeat *salesman-num*
                                   collect (make-salesman :GENES (gene-code) :fitness 0.0 :distance 0 :probability 0))))
 
-(defmacro map-salesmans (f salesmans-list target)
-  (let ((salesman (gensym)))
-    `(mapc #'(lambda (,salesman)
-               (,f ,salesman ,target))
-           ,salesmans-list)))
+;; 実行部
 
-;; todo 交叉関数と突然変異
 (defun update-world ()
   "この関数を入力した値分くりかえし、近似を求める"
 
@@ -131,5 +136,13 @@
   (map-salesmans set-fitness *salesmans-list*  (car *min-distance-num*))
 
   (map-salesmans set-probability *salesmans-list* *salesmans-list*))
+
+;; マクロ
+
+(defmacro map-salesmans (f salesmans-list target)
+  (let ((salesman (gensym)))
+    `(mapc #'(lambda (,salesman)
+               (,f ,salesman ,target))
+           ,salesmans-list)))
 
 (defun repl ())
