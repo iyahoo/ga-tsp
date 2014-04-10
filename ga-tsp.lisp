@@ -18,11 +18,15 @@
 ;; 遺伝子は数値のリストを巡回経路とする
 ;; 適応値 = 自分の経路の距離 / 今までの試行で求めた最短の距離
 ;; ペアの選択 確率 = 適用度/全体の適用度の総和
+
+;; todo
+
 ;; 交叉 1点 同じ都市番号は入ってはいけないので、部分写像交叉も利用する
 ;; 突然変異=どれか2つを交換
 ;; 一回分の試行をまとめる
 ;; replの作成
 ;; 実行中に現在の*minは表示できるようにする
+;; asdを作る
 
 (defstruct salesman genes fitness distance probability)
 
@@ -33,7 +37,7 @@
        while (< (length genes) *city-number*)
        do (let ((num (1+ (random *city-number*))))
             (unless (member num genes)
-                (push num genes))))
+              (push num genes))))
     genes))
 
 ;; 距離関連
@@ -42,7 +46,7 @@
   "遺伝子を巡回経路とした距離"
   (let ((genes (salesman-genes salesman))) ;; pop用
     (setf (salesman-distance salesman) (+ (loop for i from 1 below *city-number*
-                                           sum (get-distance (pop genes) (car genes) edge-alist))
+                                             sum (get-distance (pop genes) (car genes) edge-alist))
                                           (get-distance (pop genes) (car (salesman-genes salesman)) edge-alist)))))
 
 (defun minimum-distance (salesmans)
@@ -72,7 +76,9 @@
          (prob (calc-probability salesman sumfit)))
     (setf (salesman-probability salesman) prob)))
 
-;; todo 交叉 確率に応じて2つの親を選ぶ 部分写像交叉
+;; 交叉関連
+
+;; todo 交叉 部分写像交叉
 
 ;; 1.0から順に自分の確率で減らしていき、0を切った時に選ばれたとする
 (defun parents-genes (salesmans)
@@ -81,30 +87,37 @@
     (loop for i do (when (< (setf decision (- decision (salesman-probability (nth i salesmans)))) 0)
                      (return (salesman-genes (nth i salesmans)))))))
 
-(defun partial-mapping-cross () 
-  "部分写像交叉。")
+;; 必要な情報 リストのサイズ newgen 入れたい値(最初はset-crossingより)
+;; father 写像用
+;; mgen 同じものが入っているかどうかはnewgenでなく、mgenを見ればよい
+;; addlen mgenは後ろの半分なので、要素数を求めたらこの要素数を加える
+;; pos 前にpopを試みたがすでに入っていた要素番号
+(defun partial-mapping-cross (father mgen pos addlen)  
+  "部分写像交叉"
+  (let* ((addgen (nth pos father))
+         (overpos (position addgen mgen))) ; Overlap position
+    (if overpos
+        (partial-mapping-cross father mgen (+ overpos addlen) addlen)
+        addgen)))
 
 ;; 案1
 ;; gen = 入れようとしている要素 newgen = 入れる先、genと同じものがないか確認 pos = 前回入れようとしたものnewgenでのの位置
 ;; (gen newgen pos)                       
 
 (defun set-crossing (salesman c-salesmans) ; コピーしたものを渡す
-  "交叉の実行")
-
-;; 案1
-;; 途中までは良かったが部分写像が思いつかない
-;;
-;; (let* ((father (parents-genes c-salesmans))                 ; 反転した遺伝子の後ろ半分を、すでに存在しないか確かめながらconsで追加する
-;;        (mother (parents-genes c-salesmans))
-;;        (len (length father))
-;;        (fgen (copy-seq (nthcdr (/ (length mother) 2) (reverse father))))                  ; 父となる遺伝子の前半分
-;;        (mgen (copy-seq (nthcdr (/ (length mother) 2) mother)))
-;;        (newgen (mgen)))
-;;   (loop unless (fgen)
-;;      do (push newgen (let ((pos (position (car fgen) newgen)))
-;;                        (if pos
-;;                            (partial-mapping-cross (pop fgen) newgen (+ pos (/ len 2)))   ; ここで部分写像 
-;;                            (pop fgen))))))
+  "交叉の実行"
+  (let* ((father (parents-genes c-salesmans))
+         (mother (parents-genes c-salesmans))
+         (len (/ (length father) 2))
+         (rfgen (copy-seq (nthcdr len (reverse father))))                  ; 父となる遺伝子の逆順になった前半分
+         (mgen (copy-seq (nthcdr les mother)))
+         (newgen (copy-seq mgen)))
+    (loop when rfgen
+       do (push newgen (let ((pos (position (car rfgen) mgen))) ;; error --- should be a lambda expression loopの書き方に問題がありそう
+                         (if pos
+                             (progn (pop rfgen)                            ; 捨てる
+                                    (partial-mapping-cross father mgen (+ pos len) len))   ; ここで部分写像 
+                             (pop rfgen)))))))
 
 ;; todo 突然変異 RANDOMに2要素を交換するのみ
 (defun set-mutation (salesman))
@@ -112,15 +125,16 @@
 ;; 初期化
 
 (defun init-status ()
-  (setf *city-number* 14)
+  (setf *city-number* 10)               ; even
   (setf *max-distance-num* 20)
-  (setf *salesman-num* 10))
+  (setf *salesman-num* 10)
+  (setf *min-distance-num* (list (* *max-distance-num* *city-number*) nil)))
 
 (defun initialization ()
   (init-status)
   (setf *edge-alist* (make-city-edges))
   (setf *salesmans-list* (loop repeat *salesman-num*
-                                  collect (make-salesman :GENES (gene-code) :fitness 0.0 :distance 0 :probability 0))))
+                            collect (make-salesman :GENES (gene-code) :fitness 0.0 :distance 0 :probability 0))))
 
 ;; 実行部
 
@@ -137,6 +151,8 @@
 
   (map-salesmans set-probability *salesmans-list* *salesmans-list*))
 
+(defun repl ())
+
 ;; マクロ
 
 (defmacro map-salesmans (f salesmans-list target)
@@ -145,4 +161,3 @@
                (,f ,salesman ,target))
            ,salesmans-list)))
 
-(defun repl ())
