@@ -18,12 +18,12 @@
 ;; 遺伝子は数値のリストを巡回経路とする
 ;; 適応値 = 自分の経路の距離 / 今までの試行で求めた最短の距離
 ;; ペアの選択 確率 = 適用度/全体の適用度の総和
-
-;; todo
-
 ;; 交叉 1点 同じ都市番号は入ってはいけないので、部分写像交叉も利用する
 ;; 突然変異=どれか2つを交換
 ;; 一回分の試行をまとめる
+
+;; todo
+
 ;; replの作成
 ;; 実行中に現在の*minは表示できるようにする
 ;; asdを作る
@@ -54,7 +54,7 @@
   (let ((mindis (reduce #'min (mapcar #'(lambda (salesman)
                                           (salesman-distance salesman))
                                       salesmans))))
-    (list mindis (find mindis salesmans :key #'salesman-distance)))) 
+    (list mindis (copy-seq (salesman-genes (find mindis salesmans :key #'salesman-distance)))))) 
 
 ;; 適応値、確率関連
 
@@ -71,16 +71,19 @@
   (/ (salesman-fitness salesman) sum-fitness))
 
 (defun set-probability (salesman salesmans)
-  "選ばれる確率をセットする。"
+  "選ばれる確率をセットする。適応値が高い場合(ここでは0.9以上とした)、遺伝子を残しやすい用に2倍に設定する"
   (let* ((sumfit (sum-fitness salesmans))
          (prob (calc-probability salesman sumfit)))
     (setf (salesman-probability salesman) prob)))
 
+;; (if (> prob 0.9)
+;;     (* prob 2)
+;;     prob)
 ;; 交叉関連
 
 ;; todo 交叉 部分写像交叉
 
-;; 1.0から順に自分の確率で減らしていき、0を切った時に選ばれたとする
+;; から順に自分の確率で減らしていき、0を切った時に選ばれたとする
 (defun parents-genes (salesmans)
   "ルーレット方式でランダムに一人の親を選び遺伝子コードを返す"
   (let ((decision (random 1.00)))
@@ -100,27 +103,32 @@
         (partial-mapping-cross father mgen (+ overpos addlen) addlen)
         addgen)))
 
-;; 案1
-;; gen = 入れようとしている要素 newgen = 入れる先、genと同じものがないか確認 pos = 前回入れようとしたものnewgenでのの位置
-;; (gen newgen pos)                       
-
 (defun set-crossing (salesman c-salesmans) ; コピーしたものを渡す
   "交叉の実行"
   (let* ((father (parents-genes c-salesmans))
          (mother (parents-genes c-salesmans))
          (len (/ (length father) 2))
          (rfgen (copy-seq (nthcdr len (reverse father))))                  ; 父となる遺伝子の逆順になった前半分
-         (mgen (copy-seq (nthcdr les mother)))
+         (mgen (copy-seq (nthcdr len mother)))
          (newgen (copy-seq mgen)))
-    (loop when rfgen
-       do (push newgen (let ((pos (position (car rfgen) mgen))) ;; error --- should be a lambda expression loopの書き方に問題がありそう
-                         (if pos
-                             (progn (pop rfgen)                            ; 捨てる
-                                    (partial-mapping-cross father mgen (+ pos len) len))   ; ここで部分写像 
-                             (pop rfgen)))))))
+    (loop for i below len
+       do (push (let ((pos (position (car rfgen) mgen))) ;; error --- should be a lambda expression loopの書き方に問題がありそう
+                  (if pos
+                      (progn (pop rfgen)                            ; 捨てる
+                             (partial-mapping-cross father mgen (+ pos len) len))   ; ここで部分写像 
+                      (pop rfgen)))
+                newgen))
+    (setf (salesman-genes salesman) newgen)))
 
 ;; todo 突然変異 RANDOMに2要素を交換するのみ
-(defun set-mutation (salesman))
+(defun set-mutation (salesman)
+  (let* ((genes (salesman-genes salesman))
+         (len (length genes))
+         (randpos1 (random (1- len)))
+         (randpos2 (random (1- len)))
+         (buf (nth randpos1 genes)))
+    (setf (nth randpos1 (salesman-genes salesman)) (nth randpos2 (salesman-genes salesman)))
+    (setf (nth randpos2 (salesman-genes salesman)) buf)))
 
 ;; 初期化
 
@@ -134,13 +142,25 @@
   (init-status)
   (setf *edge-alist* (make-city-edges))
   (setf *salesmans-list* (loop repeat *salesman-num*
-                            collect (make-salesman :GENES (gene-code) :fitness 0.0 :distance 0 :probability 0))))
+                            collect (make-salesman :GENES (gene-code) :fitness 0.0 :distance 0 :probability 0)))
+  (map-salesmans set-distance *salesmans-list* *edge-alist*)
+  (setf *min-distance-num* (if (> (car *min-distance-num*) (car (minimum-distance *salesmans-list*)))
+                               (minimum-distance *salesmans-list*)
+                               *min-distance-num*))
+  (map-salesmans set-fitness *salesmans-list*  (car *min-distance-num*))
+  (map-salesmans set-probability *salesmans-list* *salesmans-list*))
 
 ;; 実行部
 
 (defun update-world ()
   "この関数を入力した値分くりかえし、近似を求める"
 
+  (map-salesmans set-crossing *salesmans-list* (copy-seq *salesmans-list*))
+
+  (mapcar #'(lambda (salesman)
+              (set-mutation salesman))
+          *salesmans-list*)
+  
   (map-salesmans set-distance *salesmans-list* *edge-alist*)
   
   (setf *min-distance-num* (if (> (car *min-distance-num*) (car (minimum-distance *salesmans-list*)))
@@ -150,6 +170,9 @@
   (map-salesmans set-fitness *salesmans-list*  (car *min-distance-num*))
 
   (map-salesmans set-probability *salesmans-list* *salesmans-list*))
+
+(defun check-stat ()
+  (format nil "min: ~a ~a ~% salesman: ~a ~%" (car *min-distance-num*) (cdr *min-distance-num*) *salesmans-list*))
 
 (defun repl ())
 
