@@ -1,5 +1,6 @@
 ;; 遺伝的アルゴリズムによる、巡回セールスマン問題の解(近似値)を求めたいプログラム
-;; 
+;;
+
 (ql:quickload :trivial-shell)
 
 (load "graph-util")
