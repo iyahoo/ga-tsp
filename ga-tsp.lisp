@@ -1,5 +1,6 @@
 ;; 遺伝的アルゴリズムによる、巡回セールスマン問題の解(近似値)を求めたいプログラム
 ;; 
+(ql:quickload :trivial-shell)
 
 (load "graph-util")
 
@@ -23,6 +24,7 @@
 ;; 一回分の試行をまとめる
 
 ;; todo
+;; v
 
 ;; replの作成
 ;; 実行中に現在の*minは表示できるようにする
@@ -33,7 +35,7 @@
 (defun gene-code ()
   "重複のないランダムな1~*city-number*の遺伝子(数字を街の番号とする)"
   (let ((genes (list (1+ (random *city-number*)))))
-    (loop for i
+    (loop 
        while (< (length genes) *city-number*)
        do (let ((num (1+ (random *city-number*))))
             (unless (member num genes)
@@ -90,18 +92,16 @@
          (prob (calc-probability salesman sumfit)))
     (setf (salesman-probability salesman) prob)))
 
-;; (if (> prob 0.9)
-;;     (* prob 2)
-;;     prob)
 ;; 交叉関連
 
 ;; todo 交叉 部分写像交叉
 
-;; から順に自分の確率で減らしていき、0を切った時に選ばれたとする
+;; 1.0から順に自分の確率で減らしていき、0を切った時に選ばれたとする
 (defun parents-genes (salesmans)
   "ルーレット方式でランダムに一人の親を選び遺伝子コードを返す"
   (let ((decision (random 1.00)))
-    (loop for i do (when (< (setf decision (- decision (salesman-probability (nth i salesmans)))) 0)
+    (loop for i from 0 to (1- *salesman-num*)
+       do (when (< (setf decision (- decision (salesman-probability (nth i salesmans)))) 0)
                      (return (salesman-genes (nth i salesmans)))))))
 
 ;; 必要な情報 リストのサイズ newgen 入れたい値(最初はset-crossingより)
@@ -146,29 +146,27 @@
 
 ;; 初期化
 
+(defmacro map-salesmans (f salesmans-list target)
+  (let ((salesman (gensym)))
+    `(mapc #'(lambda (,salesman)
+               (,f ,salesman ,target))
+           ,salesmans-list)))
+
 (defun init-status ()
-  (setf *city-number* 10)               ; even
+  (setf *city-number* 20)               ; even
   (setf *max-distance-num* 20)
   (setf *salesman-num* 5)
   (setf *min-distance-num* (list (* *max-distance-num* *city-number*) nil)))
 
 (defun initialization ()
   (init-status)
-  (setf *edge-alist* ;; (make-city-edges))
-        '((1 (2 8) (3 13) (4 7) (5 16) (6 6) (7 6) (8 1) (9 18) (10 2))
-          (2 (1 8) (3 7) (4 4) (5 4) (6 3) (7 8) (8 17) (9 8) (10 17))
-          (3 (1 13) (2 7) (4 11) (5 9) (6 12) (7 8) (8 19) (9 19) (10 17))
-          (4 (1 7) (2 4) (3 11) (5 6) (6 17) (7 20) (8 6) (9 11) (10 14))
-          (5 (1 16) (2 4) (3 9) (4 6) (6 4) (7 16) (8 1) (9 2) (10 12))
-          (6 (1 6) (2 3) (3 12) (4 17) (5 4) (7 14) (8 16) (9 13) (10 10))
-          (7 (1 6) (2 8) (3 8) (4 20) (5 16) (6 14) (8 9) (9 13) (10 3))
-          (8 (1 1) (2 17) (3 19) (4 6) (5 1) (6 16) (7 9) (9 17) (10 19))
-          (10 (1 2) (2 17) (3 17) (4 14) (5 12) (6 10) (7 3) (8 19) (9 12))
-          (9 (1 18) (2 8) (3 19) (4 11) (5 2) (6 13) (7 13) (8 17) (10 12)))) ; 一旦街を固定
+  (setf *edge-alist* (make-city-edges))
+    ; 一旦街を固定
   (setf *salesmans-list* (loop repeat *salesman-num*
                             collect (make-salesman :GENES (gene-code) :fitness 0.0 :distance 0 :probability 0)))
+  
   (map-salesmans set-distance *salesmans-list* *edge-alist*)
-  (setf *min-distance-num* (set-minimum-distance *min-distance-num* *salesmans-list*))
+  (setf *min-distance-num* (get-minimum-distance *min-distance-num* *salesmans-list*))
   (map-salesmans set-fitness *salesmans-list*  (car *min-distance-num*))
   (map-salesmans set-probability *salesmans-list* *salesmans-list*))
 
@@ -195,12 +193,3 @@
   (format nil "min: ~a ~a ~% salesman: ~a ~%" (car *min-distance-num*) (cdr *min-distance-num*) *salesmans-list*))
 
 (defun repl ())
-
-;; マクロ
-
-(defmacro map-salesmans (f salesmans-list target)
-  (let ((salesman (gensym)))
-    `(mapc #'(lambda (,salesman)
-               (,f ,salesman ,target))
-           ,salesmans-list)))
-
