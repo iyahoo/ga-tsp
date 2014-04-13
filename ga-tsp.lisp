@@ -54,7 +54,21 @@
   (let ((mindis (reduce #'min (mapcar #'(lambda (salesman)
                                           (salesman-distance salesman))
                                       salesmans))))
-    (list mindis (copy-seq (salesman-genes (find mindis salesmans :key #'salesman-distance)))))) 
+    (list mindis (copy-seq (salesman-genes (find mindis salesmans :key #'salesman-distance))))))
+
+;; todo 遺伝子が同じという判定をつよくする(反転、またはn回ずらすと同じ場合は同じ遺伝子)
+;;      引数をとる形に作り直す
+(defun get-minimum-distance (minimum-distance-num salesmans)
+  "最小の周回距離とその遺伝子を保存する。最小値と同じ別な遺伝子が出た場合それも保存する"
+  (let* ((pastmin (car minimum-distance-num))
+         (newsales (minimum-distance salesmans))
+         (newdis (car newsales))
+         (newgen (cdr newsales)))
+    (if (> pastmin newdis)
+        newsales                
+        (if (and (= pastmin newdis) (member newgen minimum-distance-num))
+            (append minimum-distance-num newgen)
+            minimum-distance-num))))
 
 ;; 適応値、確率関連
 
@@ -135,7 +149,7 @@
 (defun init-status ()
   (setf *city-number* 10)               ; even
   (setf *max-distance-num* 20)
-  (setf *salesman-num* 10)
+  (setf *salesman-num* 5)
   (setf *min-distance-num* (list (* *max-distance-num* *city-number*) nil)))
 
 (defun initialization ()
@@ -154,9 +168,7 @@
   (setf *salesmans-list* (loop repeat *salesman-num*
                             collect (make-salesman :GENES (gene-code) :fitness 0.0 :distance 0 :probability 0)))
   (map-salesmans set-distance *salesmans-list* *edge-alist*)
-  (setf *min-distance-num* (if (> (car *min-distance-num*) (car (minimum-distance *salesmans-list*)))
-                               (minimum-distance *salesmans-list*)
-                               *min-distance-num*))
+  (setf *min-distance-num* (set-minimum-distance *min-distance-num* *salesmans-list*))
   (map-salesmans set-fitness *salesmans-list*  (car *min-distance-num*))
   (map-salesmans set-probability *salesmans-list* *salesmans-list*))
 
@@ -173,9 +185,7 @@
   
   (map-salesmans set-distance *salesmans-list* *edge-alist*)
   
-  (setf *min-distance-num* (if (> (car *min-distance-num*) (car (minimum-distance *salesmans-list*)))
-                               (minimum-distance *salesmans-list*)
-                               *min-distance-num*))
+  (setf *min-distance-num* (get-minimum-distance *min-distance-num* *salesmans-list*))
   
   (map-salesmans set-fitness *salesmans-list*  (car *min-distance-num*))
 
