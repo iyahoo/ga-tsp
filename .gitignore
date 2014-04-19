@@ -6,3 +6,6 @@
 *.org
 graph-util.lisp
 README.markdown
+ga-tsp-test.asd
+t/ga-tsp.lisp
+
