@@ -1,3 +1,13 @@
+#|
+  This file is a part of ga-tsp project.
+  Copyright (c) 2014 iyahoo (lhcpr191)
+|#
+
+(in-package :cl-user)
+(defpackage ga-tsp
+  (:use :cl))
+(in-package :ga-tsp)
+
 ;; make city-node
 
 (defun nodes->alist (nodes)
@@ -72,5 +82,3 @@
 (defun draw-city (edge-alist)
   (let ((node (loop for i below *city-number* collect (1+ i))))
     (ugraph->png "city.dat" (nodes->alist node) edge-alist)))
-
-
