@@ -1,3 +1,13 @@
+#|
+  This file is a part of ga-tsp project.
+  Copyright (c) 2014 iyahoo (lhcpr191)
+|#
+
+(in-package :cl-user)
+(defpackage ga-tsp
+  (:use :cl))
+(in-package :ga-tsp)
+
 ;; make city-node
 
 (defun nodes->alist (nodes)

@@ -1,17 +1,15 @@
+#|
+  This file is a part of ga-tsp project.
+  Copyright (c) 2014 iyahoo (lhcpr191)
+|#
+
+(in-package :cl-user)
+(defpackage ga-tsp
+  (:use :cl))
+(in-package :ga-tsp)
+
 ;; 遺伝的アルゴリズムによる、巡回セールスマン問題の解(近似値)を求めたいプログラム
 ;;
-
-(defparameter *city-number* nil)
-(defparameter *max-distance-num* nil)   ;町と町の最大距離(この数値以下でランダム)
-(defparameter *salesman-num* nil)
-(defparameter *min-distance-num* nil)   ;見つけた巡回経路の最短距離
-(defparameter *edge-alist* nil)         ;街のalist
-(defparameter *salesmans-list* nil)
-
-(ql:quickload :trivial-shell)
-
-(load "graph-util")
-(load "make-city")
 
 ;; city-alistのcarがnodeの始点、cdrの要素のcarとcdrがそれぞれ終点と距離
 ;; 遺伝子は数値のリストを巡回経路とする
@@ -148,9 +146,9 @@
            ,salesmans-list)))
 
 (defun init-status ()
-  (setf *city-number* 20)               ; even
+  (setf *city-number* 10)               ; even
   (setf *max-distance-num* 20)
-  (setf *salesman-num* 10)
+  (setf *salesman-num* 5)
   (setf *min-distance-num* (list (* *max-distance-num* *city-number*) nil)))
 
 (defun initialization ()
