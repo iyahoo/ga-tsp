@@ -1,6 +1,6 @@
 #|
   This file is a part of ga-tsp project.
-  Copyright (c) 2014 iyahoo (lhcpr191)
+  Copyright (c) 2014 iyahoo (lhcpr191@gmail.com)
 |#
 
 (in-package :cl-user)

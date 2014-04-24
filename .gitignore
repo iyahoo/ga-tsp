@@ -4,8 +4,8 @@
 *.fas
 *.lib
 *.org
-graph-util.lisp
+*.html
+*.dx64fsl
 README.markdown
 ga-tsp-test.asd
 t/ga-tsp.lisp
-

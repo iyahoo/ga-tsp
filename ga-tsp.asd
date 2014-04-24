@@ -1,10 +1,10 @@
 #|
   This file is a part of ga-tsp project.
-  Copyright (c) 2014 iyahoo (lhcpr191)
+  Copyright (c) 2014 iyahoo (lhcpr191@gmail.com)
 |#
 
 #|
-  Author: iyahoo (lhcpr191)
+  Author: iyahoo (lhcpr191@gmail.com)
 |#
 
 (in-package :cl-user)
@@ -15,15 +15,15 @@
 (defsystem ga-tsp
   :version "0.1"
   :author "iyahoo"
-  :license ""
+  :license "public"
   :depends-on (:trivial-shell
                :cl-annot)
   :components ((:module "src"
                 :components
-                ((:file "ga-tsp")
-                 (:file "make-city")
+                ((:file "head")
                  (:file "graph-util")
-                 (:file "head"))))
+                 (:file "ga-tsp" :depends-on ("head"))
+                 (:file "make-city" :depends-on ("ga-tsp")))))
 :description ""
   :long-description
   #.(with-open-file (stream (merge-pathnames
