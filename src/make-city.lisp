@@ -82,3 +82,4 @@
 (defun draw-city (edge-alist)
   (let ((node (loop for i below *city-number* collect (1+ i))))
     (ugraph->png "city.dat" (nodes->alist node) edge-alist)))
+

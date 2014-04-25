@@ -8,6 +8,7 @@
   (:use :cl))
 (in-package :ga-tsp)
 
+
 (defparameter *city-number* nil)
 (defparameter *max-distance-num* nil)   ;町と町の最大距離(この数値以下でランダム)
 (defparameter *salesman-num* nil)
