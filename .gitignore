@@ -6,6 +6,7 @@
 *.org
 *.html
 *.dx64fsl
+*.txt
 README.markdown
 ga-tsp-test.asd
 t/ga-tsp.lisp

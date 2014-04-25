@@ -3,7 +3,7 @@ ga-tsp
 
 Genetic Programing - Traveling Salesman Problem
 
-実行する場合、街の表示(draw-city関数)は Land of Lisp の graph-util を若干書き換えたものを使用しています。
+街の表示(draw-city関数)は Land of Lisp の graph-util を若干書き換えたものを使用しています。
 
 下記リンクで公開されています。
 
