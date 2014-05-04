@@ -127,13 +127,11 @@
 
 ;; 突然変異
 (defun set-mutation (salesman)
-  (let* ((genes (salesman-genes salesman))
-         (len (length genes))
+  (let* ((len (length (salesman-genes salesman)))
          (randpos1 (random (1- len)))
-         (randpos2 (random (1- len)))
-         (buf (nth randpos1 genes)))
-    (setf (nth randpos1 (salesman-genes salesman)) (nth randpos2 (salesman-genes salesman)))
-    (setf (nth randpos2 (salesman-genes salesman)) buf)))
+         (randpos2 (random (1- len))))
+    (rotatef (nth randpos1 (salesman-genes salesman))
+             (nth randpos2 (salesman-genes salesman)))))
 
 ;; 初期化
 

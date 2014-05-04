@@ -1,7 +1,7 @@
 ga-tsp
 ======
 
-Genetic Programing - Traveling Salesman Problem
+Genetic Algorithm - Traveling Salesman Problem
 
 街の表示(draw-city関数)は Land of Lisp の graph-util を若干書き換えたものを使用しています。
 
