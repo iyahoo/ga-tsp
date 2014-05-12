@@ -8,6 +8,7 @@
   (:use :cl))
 (in-package :ga-tsp)
 
+(cl-annot:enable-annot-syntax)
 
 ;; 遺伝的アルゴリズムによる、巡回セールスマン問題の解(近似値)を求めたいプログラム
 
@@ -209,6 +210,7 @@
                  (check)
                  (repl)))))))
 
+@export
 (defun main ()
   (initialization)
   (repl))

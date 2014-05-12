@@ -13,8 +13,7 @@ qlのパスが通っているところに置き、
 
 ```lisp
 (ql:quickload :ga-tsp)
-(in-package :ga-tsp)
-(main)
+(ga-tsp:main)
 ```
 
 で実行できます。
