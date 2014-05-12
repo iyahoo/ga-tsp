@@ -8,6 +8,7 @@
   (:use :cl))
 (in-package :ga-tsp)
 
+
 ;; 遺伝的アルゴリズムによる、巡回セールスマン問題の解(近似値)を求めたいプログラム
 
 ;; 仕様
@@ -20,9 +21,10 @@
 ;; 突然変異=どれか2つを交換
 ;; set-hoge関数は構造体(salesman)を取り内部で破壊的操作する 主にupdate-world(世代の更新)で使用
 
-;; todo
-;; コードを綺麗に
+;; todo 今週の土日にやる
+;; struct -> class 初期化関数なくす
 ;; set関数をなくす(全てupdate-worldで行い、set関数は返すだけにしたい)
+;; 
 
 (defstruct salesman genes fitness distance probability)
 
