@@ -55,7 +55,7 @@
                (mapcar #'(lambda (edge)
                            (let ((node2 (car edge)))
                              (list node2 (if (< node1 node2)
-                                             (1+ (random *max-distance-num*))))))
+                                             (1+ (random *max-distance*))))))
                        node1-edge))))
    edge-alist))
 

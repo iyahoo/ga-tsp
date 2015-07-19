@@ -1,10 +1,10 @@
 #|
-  This file is a part of ga-tsp project.
-  Copyright (c) 2014 iyahoo (lhcpr191@gmail.com)
+  This file is a part of ga-tsps project.
+  Copyright (c) 2015 iyahoo (s1200191@gmail.com)
 |#
 
 #|
-  Author: iyahoo (lhcpr191@gmail.com)
+  Author: iyahoo (s1200191@gmail.com)
 |#
 
 (in-package :cl-user)
@@ -15,16 +15,14 @@
 (defsystem ga-tsp
   :version "0.1"
   :author "iyahoo"
-  :license "public"
+  :license ""
   :depends-on (:trivial-shell
                :cl-annot)
   :components ((:module "src"
                 :components
-                ((:file "head")
-                 (:file "graph-util")
-                 (:file "ga-tsp" :depends-on ("head"))
-                 (:file "make-city" :depends-on ("ga-tsp")))))
-:description ""
+                ((:file "ga-tsp")
+                 (:file "graph-util"))))
+  :description ""
   :long-description
   #.(with-open-file (stream (merge-pathnames
                              #p"README.markdown"
@@ -37,4 +35,4 @@
                                :fill-pointer t)))
           (setf (fill-pointer seq) (read-sequence seq stream))
           seq)))
-  :in-order-to ((test-op (load-op ga-tsp-test))))
+  :in-order-to ((test-op (test-op ga-tsp-test))))

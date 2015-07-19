@@ -1,8 +1,3 @@
-#|
-  This file is a part of ga-tsp project.
-  Copyright (c) 2014 iyahoo (lhcpr191@gmail.com)
-|#
-
 (in-package :cl-user)
 (defpackage ga-tsp
   (:use :cl))
@@ -10,100 +5,150 @@
 
 (cl-annot:enable-annot-syntax)
 
-;; 遺伝的アルゴリズムによる、巡回セールスマン問題の解(近似値)を求めたいプログラム
+;; You have to (initialize) 
 
-;; 仕様
+(defvar *city-number* 10)
+(defvar *max-distance* 20)
+(defvar *num-of-salesman* 10)
+(defvar *min-distance* (list (* *max-distance* *city-number*) nil))
 
-;; city-alistのcarがnodeの始点、cdrの要素のcarとcdrがそれぞれ終点と距離
-;; 遺伝子は数値のリストを巡回経路とする
-;; 適応値 = 自分の経路の距離 / 今までの試行で求めた最短の距離
-;; ペアの選択 確率 = 適用度/全体の適用度の総和
-;; 交叉 1点 同じ都市番号は入ってはいけないので、部分写像交叉も利用する
-;; 突然変異=どれか2つを交換
-;; set-hoge関数は構造体(salesman)を取り内部で破壊的操作する 主にupdate-world(世代の更新)で使用
+(defparameter *edges-alist* nil)
+(defparameter *salesmans-list* nil)
 
-;; todo 今週の土日にやる
-;; struct -> class 初期化関数なくす
-;; set関数をなくす(全てupdate-worldで行い、set関数は返すだけにしたい)
-;; 
+(defclass salesman ()
+  ((genes :accessor salesman-genes :initarg :genes)
+   (distance :accessor salesman-distance :initarg :distance)
+   (fitness :accessor salesman-fitness :initarg :fitness)
+   (probability :accessor salesman-probability :initarg :probability)))
 
-(defstruct salesman genes fitness distance probability)
+(defmethod print-object ((obj salesman) stream)
+  (print-unreadable-object (obj stream :type t)
+    (format stream "genes: ~a distance: ~a fitness: ~a probability ~a"
+            (salesman-genes obj) (salesman-distance obj) (salesman-fitness obj) (salesman-probability obj))))
 
-(defun gene-code ()
-  "重複のないランダムな1~*city-number*の遺伝子(数字を街の番号とする)"
-  (let ((genes (list (1+ (random *city-number*)))))
-    (loop 
-       while (< (length genes) *city-number*)
-       do (let ((num (1+ (random *city-number*))))
-            (unless (member num genes)
-              (push num genes))))
-    genes))
+(defun print-salesmans ()
+  (map 'list #'(lambda (salesman)
+                 (format nil "~a~%" salesman))
+       *salesmans-list*))
 
-;; 距離
+(defun gene-code (&optional genes)
+  "Generate not duplicatively genes"
+  (assert (<= (length genes) *city-number*))
+  (if (= (length genes) *city-number*)
+      genes
+      (let ((new-gene (1+ (random *city-number*))))
+        (gene-code (adjoin new-gene genes)))))
 
-(defun set-distance (salesman edge-alist)
-  "巡回経路の距離"
-  (let ((genes (salesman-genes salesman)))
-    (setf (salesman-distance salesman) (+ (loop for i from 1 below *city-number*
-                                             sum (get-distance (pop genes) (car genes) edge-alist))
-                                          (get-distance (pop genes) (car (salesman-genes salesman)) edge-alist)))))
+(defun create-salesman ()
+  (let* ((genes (gene-code))
+         (distance (get-all-distance genes)))
+    (make-instance 'salesman :genes genes :distance distance :fitness 0 :probability 0)))
 
-(defun min-distance-list (salesmans)
-  "全試行において求まった最小の距離とその経路"
-  (let ((mindis (reduce #'min (mapcar #'(lambda (salesman)
-                                          (salesman-distance salesman))
-                                      salesmans))))
-    (list mindis (copy-seq (salesman-genes (find mindis salesmans :key #'salesman-distance))))))
+(defun make-1-n-list (n &optional acc)
+  (assert (>= n 0))
+  (if (= n 0)
+      acc
+      (make-1-n-list (1- n) (cons n acc))))
 
-;; todo 遺伝子が同じという判定をつよくする(反転、またはn回ずらすと同じ場合は同じ遺伝子)
-(defun get-minimum-distance (minimum-distance-num salesmans)
-  "最小の周回距離とその遺伝子を保存する。最小値と同じ別な遺伝子が出た場合それも保存する"
-  (let* ((pastmin (car minimum-distance-num))
-         (newsales (min-distance-list salesmans))
-         (newdis (car newsales))
-         (newgen (cdr newsales)))
-    (if (> pastmin newdis)
-        newsales                
-        (if (and (= pastmin newdis) (member newgen minimum-distance-num))
-            (append minimum-distance-num newgen)
-            minimum-distance-num))))
+(defun edges-alist ()
+  (let ((nodes (make-1-n-list *city-number*)))
+    (mapcar
+     #'(lambda (node-head)
+         (cons node-head
+               (mapcar #'(lambda (edge)
+                           (list edge))
+                       (remove node-head nodes))))
+     nodes)))
 
-;; 適応値
+(defun delete-duplicates-edges (edge)
+  (mapcar #'(lambda (edge1)
+              (let ((head (first edge1))
+                    (rest (rest edge1)))
+                (cons head (remove-if #'(lambda (e) (> head (car (last e)))) rest))))
+          edge))
 
-(defun set-fitness (salesman min-distance)
-  "適応値をもとめる"
-  (setf (salesman-fitness salesman) (/ (* min-distance 1.0) (salesman-distance salesman))))
+(defun add-distance (edge-alist)
+  (mapcar #'(lambda (edge)
+              (let ((node-head (first edge))
+                    (node-rest (rest edge)))
+                (cons node-head
+                      (mapcar #'(lambda (node-list)
+                                  (let ((node1 (car node-list)))
+                                    (list node1 (if (< node-head node1)
+                                                    (1+ (random *max-distance*))
+                                                    nil))))
+                              node-rest))))
+          edge-alist))
+
+(defun get-distance (start end)
+  "Distance from start to end"
+  (assert (and (/= start end) (>= *city-number* start 1) (>= *city-number* end 1)))
+  (let ((s start)
+        (e end))
+    (when (> start end)
+      (setf s end)
+      (setf e start))
+    (car (cdr (find e (cdr (assoc s *edges-alist*)) :key #'car)))))
+
+(defun get-all-distance (genes &optional start end (total 0) first)
+  "Sum of all city distance (genes)"
+  (when (and (null start) (null end) (null first))
+    (setf start (first genes)
+          end (second genes)
+          first start))
+  (if end
+      (get-all-distance (rest genes) (second genes) (third genes)
+                        (+ total (get-distance start end)) first)
+      (+ total (get-distance start first))))
+
+(defun minimum-distance ()
+  (%minimum-distance *salesmans-list*))
+
+;; for test
+(defun %minimum-distance (salesmans)
+  "return pair of minimum-distance and genes"
+  (let ((mindist (reduce #'min (mapcar #'(lambda (salesman)
+                                           (salesman-distance salesman))
+                                       salesmans))))
+    (list mindist (salesman-genes (find mindist salesmans :key #'salesman-distance)))))
+
+(defmethod calc-fitness ((salesman salesman))
+  (/ (float (car (minimum-distance))) (salesman-distance salesman)))
 
 (defun sum-fitness (salesmans)
-  "全てのセールスマンの適応値の合計"
   (reduce #'+ (mapcar #'salesman-fitness salesmans)))
 
-;; 交叉
+(defmethod calc-probability ((salesman salesman))
+  "Probability of be selected when selecting parent genes"
+  (/ (salesman-fitness salesman) (sum-fitness *salesmans-list*)))
 
-(defun calc-probability (salesman sum-fitness)
-  "ひとりのセールスマンが呼ばれる確率"
-  (/ (salesman-fitness salesman) sum-fitness))
+(defun initialize ()
+  (setf *edges-alist* (add-distance (delete-duplicates-edges (edges-alist)))
+        *salesmans-list* (loop :repeat *num-of-salesman*
+                            :collect (create-salesman)))
+  (loop :for salesman :in *salesmans-list*
+     :collect (setf (salesman-fitness salesman) (calc-fitness salesman)))
+  (loop :for salesman :in *salesmans-list*
+     :collect (setf (salesman-probability salesman) (calc-probability salesman))))
 
-(defun set-probability (salesman salesmans)
-  "選ばれる確率をセットする。"
-  (let* ((sumfit (sum-fitness salesmans))
-         (prob (calc-probability salesman sumfit)))
-    (setf (salesman-probability salesman) prob)))
+(defun test ()
+  (asdf:test-system :ga-tsp))
 
-;; 1.0から順に自分の確率で減らしていき、0を切った時に選ばれたとする
+;; --- fix 2015/2/15
+
 (defun parents-genes (salesmans)
   "ルーレット方式でランダムに一人の親を選び遺伝子コードを返す"
   (let ((decision (random 1.00)))
-    (loop for i from 0 to (1- *salesman-num*)
+    (loop for i from 0 to (1- *num-of-salesman*)
        do (when (< (setf decision (- decision (salesman-probability (nth i salesmans)))) 0)
-                     (return (salesman-genes (nth i salesmans)))))))
+            (return (salesman-genes (nth i salesmans)))))))
 
 ;; father 写像用
 ;; mgen 同じものが入っているかどうかはnewgenでなく、mgenを見ればよい
 ;; addlen mgenは後ろの半分なので、要素数を求めたらこの要素数を加える
 ;; pos 前にpopを試みたがすでに入っていた要素番号
 ;; partially-mapped-crossover
-(defun partially-mapped-crossover (father mgen pos addlen)  
+(defun partially-mapped-crossover (father mgen pos addlen)
   "部分写像交叉"
   (let* ((addgen (nth pos father))
          (overpos (position addgen mgen))) ; Overlap position
@@ -120,10 +165,10 @@
          (mgen (copy-seq (nthcdr len mother)))
          (newgen (copy-seq mgen)))
     (loop for i below len
-       do (push (let ((pos (position (car rfgen) mgen))) 
+       do (push (let ((pos (position (car rfgen) mgen)))
                   (if pos
                       (progn (pop rfgen)                            ; 捨てる
-                             (partially-mapped-crossover father mgen (+ pos len) len))   ; ここで部分写像 
+                             (partially-mapped-crossover father mgen (+ pos len) len))   ; ここで部分写像
                       (pop rfgen)))
                 newgen))
     (setf (salesman-genes salesman) newgen)))
@@ -144,63 +189,47 @@
                (,f ,salesman ,target))
            ,salesmans-list)))
 
-(defun init-status ()
-  (setf *city-number* 10)               ; even
-  (setf *max-distance-num* 20)
-  (setf *salesman-num* 10)
-  (setf *min-distance-num* (list (* *max-distance-num* *city-number*) nil)))
-
 (defun initialization ()
   (init-status)
   (setf *edge-alist* (make-city-edges))
-    
-  (setf *salesmans-list* (loop repeat *salesman-num*
+
+  (setf *salesmans-list* (loop repeat *num-of-salesman*
                             collect (make-salesman :GENES (gene-code) :fitness 0.0 :distance 0 :probability 0)))
-  
+
   (map-salesmans set-distance *salesmans-list* *edge-alist*)
-  (setf *min-distance-num* (get-minimum-distance *min-distance-num* *salesmans-list*))
-  (map-salesmans set-fitness *salesmans-list*  (car *min-distance-num*))
+  (setf *min-distance* (get-minimum-distance *min-distance* *salesmans-list*))
+  (map-salesmans set-fitness *salesmans-list*  (car *min-distance*))
   (map-salesmans set-probability *salesmans-list* *salesmans-list*))
 
 ;; 実行部
 
 (defun check-stat ()
-  (format nil "min: ~a ~a ~% salesman: ~%~{~t~a~%~}" (car *min-distance-num*) (cdr *min-distance-num*) *salesmans-list*))
+  (format nil "min: ~a ~a ~% salesman: ~%~{~t~a~%~}" (car *min-distance*) (cdr *min-distance*) *salesmans-list*))
 
 (defun update-world ()
   "この関数を入力した値分くりかえし、近似を求める"
-
   (map-salesmans set-crossing *salesmans-list* (copy-seq *salesmans-list*))
-
   (mapcar #'(lambda (salesman)
               (set-mutation salesman))
           *salesmans-list*)
-  
   (map-salesmans set-distance *salesmans-list* *edge-alist*)
-  
-  (setf *min-distance-num* (get-minimum-distance *min-distance-num* *salesmans-list*))
-  
-  (map-salesmans set-fitness *salesmans-list*  (car *min-distance-num*))
-
+  (setf *min-distance* (get-minimum-distance *min-distance* *salesmans-list*))
+  (map-salesmans set-fitness *salesmans-list*  (car *min-distance*))
   (map-salesmans set-probability *salesmans-list* *salesmans-list*)
-
   (check-stat))
 
 (defun repl ()
   (fresh-line)
-  (format t "q: quit, c: check-stat, number: update-world n times")
-  (fresh-line)
-  (format t "> ")
+  (format t "q: quit, c: check-stat, number: update-world n times ~%> ")
   (let ((input (read-line)))
     (labels ((check ()
                (format t "~a" (check-stat))))
       (cond ((equal input "q") ())
             ((equal input "c")
              (check)
-             (repl))          
+             (repl))
             (t (let ((n (parse-integer input :junk-allowed t)))
                  (if n
-
                      (loop for i below n
                         do (update-world)
                         if (zerop (mod i 5000))
@@ -214,3 +243,5 @@
 (defun main ()
   (initialization)
   (repl))
+
+
